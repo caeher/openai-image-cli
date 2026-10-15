@@ -81,22 +81,23 @@ export function buildEditRequest(
     images,
     preserve,
     ...(opts.mask ? { maskPath: opts.mask } : {}),
-    ...(opts.inputFidelity
-      ? { inputFidelity: opts.inputFidelity as ImageEditRequest["inputFidelity"] }
-      : {}),
   };
+  if (opts.inputFidelity) {
+    const fidelity = opts.inputFidelity as NonNullable<ImageEditRequest["inputFidelity"]>;
+    edit.inputFidelity = fidelity;
+  }
   return edit;
 }
 
-function collect<T>(value: T, previous: T[]): T[] {
+function collectString(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
 export function registerBaseEditOptions(cmd: import("commander").Command): import("commander").Command {
   return registerGenerateOptions(cmd)
-    .option("--image <path>", "Input image (repeatable)", collect, [])
-    .option("--preserve <text>", "Preserve instruction (repeatable)", collect, [])
-    .option("--references <path:role>", "Reference path:role (repeatable)", collect, [])
+    .option("--image <path>", "Input image (repeatable)", collectString, [])
+    .option("--preserve <text>", "Preserve instruction (repeatable)", collectString, [])
+    .option("--references <path:role>", "Reference path:role (repeatable)", collectString, [])
     .option("--role <role>", "Role when a single --image is used")
     .option("--input-fidelity <level>");
 }

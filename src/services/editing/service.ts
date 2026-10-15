@@ -132,6 +132,17 @@ export class EditingService {
     const newWidth = width + left + right;
     const newHeight = height + top + bottom;
     const sizeStr = `${newWidth}x${newHeight}`;
+    if (request.dryRun) {
+      return await this.edit(
+        {
+          ...request,
+          images: [{ path: imagePath, role: "subject" }],
+          size: sizeStr,
+          dryRun: true,
+        },
+        signal,
+      );
+    }
     if (isFlexible(request.model)) {
       validateFlexible(newWidth, newHeight);
     }

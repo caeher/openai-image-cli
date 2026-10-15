@@ -40,4 +40,6 @@ export interface ImageGenerationResult {
   experimental: boolean;
   warnings: string[];
   providerPayload?: unknown;
+  savePartials?: boolean;
+  prompt?: string;
 }

@@ -20,6 +20,10 @@ export interface GenerateCommandOptions {
   apiMode?: string;
   responsesModel?: string;
   force?: boolean;
+  confirmCost?: boolean;
+  maxCost?: string;
+  budget?: string;
+  maxRequests?: string;
 }
 
 export function buildGenerationRequest(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -104,5 +104,69 @@ describe("e2e cli", () => {
       dir,
     ]);
     expect(second.status).toBe(2);
+  });
+
+  it("stdin prompt dry-run", async () => {
+    const child = spawn("node", [cli, "generate", "--stdin", "--dry-run", "--json"], {
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    child.stdin?.write("from stdin\n");
+    child.stdin?.end();
+    const stdout = await new Promise<string>((resolve, reject) => {
+      let data = "";
+      child.stdout?.on("data", (c) => {
+        data += String(c);
+      });
+      child.on("close", (code) => {
+        if (code === 0) {
+          resolve(data);
+        } else {
+          reject(new Error(`exit ${code}`));
+        }
+      });
+    });
+    const payload = JSON.parse(stdout) as { prompt: string };
+    expect(payload.prompt).toContain("from stdin");
+  });
+
+  it("compression appears in jpeg dry-run payload", () => {
+    const result = run([
+      "generate",
+      "--prompt",
+      "hi",
+      "--format",
+      "jpeg",
+      "--compression",
+      "40",
+      "--dry-run",
+      "--json",
+    ]);
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.stdout) as { providerPayload: { output_compression?: number } };
+    expect(payload.providerPayload.output_compression).toBe(40);
+  });
+
+  it("save-partials in dry-run json", () => {
+    const result = run([
+      "generate",
+      "--prompt",
+      "hi",
+      "--save-partials",
+      "--dry-run",
+      "--json",
+    ]);
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.stdout) as { savePartials: boolean };
+    expect(payload.savePartials).toBe(true);
+  });
+
+  it("config set --file rejects apiKey", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cfg-file-"));
+    const file = path.join(dir, "bad.json");
+    fs.writeFileSync(file, JSON.stringify({ apiKey: "sk-test" }));
+    const result = run(["config", "set", "--file", file]);
+    expect(result.status).toBe(3);
+    expect(result.stderr).not.toContain("sk-test");
   });
 });

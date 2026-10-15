@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import YAML from "yaml";
 import { loadEffectiveConfig } from "../../src/config/load.js";
+import { parseConfigJsonObject } from "../../src/config/schema.js";
 
 describe("config", () => {
   it("applies precedence flag > env > project > global > default", () => {
@@ -30,6 +31,10 @@ describe("config", () => {
     expect(loadEffectiveConfig(base).model).toBe("env-model");
     expect(loadEffectiveConfig({ ...base, flags: { model: "flag-model" } }).model).toBe("flag-model");
     expect(loadEffectiveConfig({ ...base, env: {} }).model).toBe("project-model");
+  });
+
+  it("rejects secret keys in json via parseConfigJsonObject", () => {
+    expect(() => parseConfigJsonObject({ apiKey: "sk-test" })).toThrow();
   });
 
   it("rejects secret keys in yaml", () => {

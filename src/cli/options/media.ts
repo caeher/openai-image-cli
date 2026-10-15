@@ -1,13 +1,13 @@
 import type { Command } from "commander";
 
-function collect<T>(value: T, previous: T[]): T[] {
+function collectString(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
 export function registerMediaLayerOptions(cmd: Command): Command {
-  return cmd.option("--layer <path>", "Composite layer (repeatable)", collect, []);
+  return cmd.option("--layer <path>", "Composite layer (repeatable)", collectString, []);
 }
 
 export function registerMediaImageListOptions(cmd: Command): Command {
-  return cmd.option("--image <path>", "Input image (repeatable)", collect, []);
+  return cmd.option("--image <path>", "Input image (repeatable)", collectString, []);
 }

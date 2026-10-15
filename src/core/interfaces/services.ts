@@ -31,6 +31,7 @@ export interface ConfigurationManager {
   getEffective(): import("../../config/schema.js").EffectiveConfig;
   init(options?: { global?: boolean }): Promise<string>;
   set(key: string, value: string, options?: { global?: boolean }): Promise<void>;
+  setFromFile(filePath: string, options?: { global?: boolean }): Promise<void>;
   get(key: string): unknown;
   list(): Record<string, unknown>;
   reset(options?: { global?: boolean }): Promise<void>;
@@ -75,7 +76,8 @@ export interface PromptBuilder {
     signal: AbortSignal,
   ): Promise<{ original: string; optimized: string }>;
   listTemplates(): readonly PromptTemplate[];
-  save(name: string, body: string): Promise<string>;
+  save(name: string, body: string, promptsDir?: string): Promise<string>;
+  loadSaved(name: string): string;
 }
 
 export interface ReferenceManager {

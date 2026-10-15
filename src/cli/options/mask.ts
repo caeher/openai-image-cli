@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 
-function collect<T>(value: T, previous: T[]): T[] {
+function collectString(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
@@ -14,7 +14,7 @@ export function registerMaskInspectOptions(cmd: Command): Command {
 
 export function registerMaskMergeOptions(cmd: Command): Command {
   return cmd
-    .option("--mask <path>", "Mask path (repeatable)", collect, [])
+    .option("--mask <path>", "Mask path (repeatable)", collectString, [])
     .option("--output <path>");
 }
 

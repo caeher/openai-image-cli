@@ -1,8 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
-import type { PromptEngine } from "../../services/prompting/engine.js";
 import type { StructuredPrompt } from "../../core/interfaces/prompt.js";
+import type { PromptBuildInput } from "../../core/interfaces/prompt.js";
+
+export interface PromptTextResolver {
+  create(fields: StructuredPrompt): string;
+  build(input: PromptBuildInput): { text: string };
+}
 
 export async function readStdinPrompt(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -14,7 +19,7 @@ export async function readStdinPrompt(): Promise<string> {
 
 export function resolvePromptText(
   opts: { prompt?: string; promptFile?: string; stdin?: boolean },
-  engine: PromptEngine,
+  engine: PromptTextResolver,
 ): string {
   if (opts.prompt) {
     if (opts.promptFile) {
