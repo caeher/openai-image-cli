@@ -1,0 +1,27 @@
+# Publish workflow is disabled unless vars.OAIIMAGE_PUBLISH == 'true'.
+# Do not run npm publish from development scripts.
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    if: vars.OAIIMAGE_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 12.11.2
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
