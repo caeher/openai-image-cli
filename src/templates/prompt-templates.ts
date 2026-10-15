@@ -1,0 +1,28 @@
+import type { PromptTemplate } from "../core/interfaces/prompt.js";
+
+export const PROMPT_TEMPLATES: PromptTemplate[] = [
+  { id: "product", defaultObjective: "Fotografía de producto aislada, centrada, con detalle de material y sin props que tapen la pieza." },
+  { id: "advertising", defaultObjective: "Anuncio con una sola idea visual, jerarquía clara y espacio para un eslogan." },
+  { id: "ecommerce", defaultObjective: "Imagen de catálogo con el artículo completo visible, fondo limpio y proporción de tienda." },
+  { id: "real-estate", defaultObjective: "Vista inmobiliaria amplia, líneas verticales rectas y luz natural creíble." },
+  { id: "interiors", defaultObjective: "Interior habitable, escala humana y materiales distinguibles." },
+  { id: "architecture", defaultObjective: "Exterior arquitectónico con contexto, proporción y cielo coherente." },
+  { id: "furniture", defaultObjective: "Mueble completo, apoyado en el suelo, con sombra de contacto." },
+  { id: "portraits", defaultObjective: "Retrato con identidad estable, mirada y luz descritas por el usuario." },
+  { id: "children", defaultObjective: "Ilustración infantil amable, sin sustos ni texto ilegible." },
+  { id: "book-covers", defaultObjective: "Portada con zona reservada para título y autor." },
+  { id: "signs", defaultObjective: "Cartel señalético simple, pocas palabras, alto contraste." },
+  { id: "posters", defaultObjective: "Póster con un foco visual y margen para tipografía." },
+  { id: "social", defaultObjective: "Pieza para red social con zona de seguridad en los bordes." },
+  { id: "icons", defaultObjective: "Icono único, legible en tamaño pequeño, sin detalle superfluo." },
+  { id: "concept-art", defaultObjective: "Concept art con silueta clara y una nota de luz dominante." },
+  { id: "games", defaultObjective: "Asset de videojuego con lectura inmediata de la forma." },
+  { id: "characters", defaultObjective: "Personaje de cuerpo completo con rasgos repetibles." },
+  { id: "infographics", defaultObjective: "Infografía con pocos bloques y etiquetas pedidas de forma literal." },
+  { id: "education", defaultObjective: "Material educativo claro, con los términos que el usuario liste." },
+  { id: "diagrams", defaultObjective: "Diagrama con cajas y relaciones descritas, sin flechas inventadas." },
+  { id: "storyboards", defaultObjective: "Viñeta de storyboard con encuadre y acción únicos." },
+  { id: "mockups", defaultObjective: "Mockup del objeto en contexto, sin deformar la pieza." },
+  { id: "packaging", defaultObjective: "Envase en tres cuartos, con el panel frontal visible." },
+  { id: "brands", defaultObjective: "Pieza de marca sobria, usando solo los colores y el nombre dados." },
+];
