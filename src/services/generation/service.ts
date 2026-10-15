@@ -84,6 +84,8 @@ export class GenerationService {
         experimental,
         warnings: [],
         providerPayload,
+        savePartials: request.savePartials,
+        prompt: request.prompt,
       };
     }
 
