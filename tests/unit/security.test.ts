@@ -26,6 +26,13 @@ describe("security utilities", () => {
     expect(() => assertInside(root, path.join(root, "..", "etc", "passwd"))).toThrow();
   });
 
+  it("allows not-yet-created paths under root (macOS /var vs /private/var)", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "oai-root-"));
+    const nested = path.join(root, "out", "image.png");
+    fs.mkdirSync(path.dirname(nested), { recursive: true });
+    expect(assertInside(root, nested)).toBe(nested);
+  });
+
   it("redacts secrets", () => {
     const out = redactSecrets({ msg: "hello sk-secret-world" }, ["secret"]);
     expect(JSON.stringify(out)).not.toContain("secret");
