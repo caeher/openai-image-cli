@@ -154,10 +154,25 @@ export interface StreamingService {
 
 export interface BatchProcessor {
   createFromFile(path: string, options: { mode: "local" | "openai"; model: string }): Promise<string>;
-  run(batchId: string, signal: AbortSignal, options?: { retry?: boolean }): Promise<void>;
-  status(batchId: string): Promise<import("../../services/batch/manifest.js").BatchManifest>;
-  retry(batchId: string, signal: AbortSignal): Promise<void>;
-  export(batchId: string, outputDir: string): Promise<void>;
+  run(
+    batchId: string,
+    signal: AbortSignal,
+    options?: { retry?: boolean; mode?: "local" | "openai" },
+  ): Promise<void>;
+  status(
+    batchId: string,
+    options?: { mode?: "local" | "openai" },
+  ): Promise<import("../../services/batch/manifest.js").BatchManifest>;
+  retry(
+    batchId: string,
+    signal: AbortSignal,
+    options?: { mode?: "local" | "openai" },
+  ): Promise<void>;
+  export(
+    batchId: string,
+    outputDir: string,
+    options?: { mode?: "local" | "openai" },
+  ): Promise<void>;
 }
 
 export interface JobManager {

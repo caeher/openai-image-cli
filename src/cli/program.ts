@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createImageCli } from "../index.js";
+import { createLogger } from "../utils/logger.js";
 import { registerConfigCommands } from "./commands/config.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerModelsCommands } from "./commands/models.js";
@@ -9,6 +10,7 @@ import { registerEditCommands } from "./commands/edit.js";
 import { registerSessionCommands } from "./commands/session.js";
 import { registerPromptCommands } from "./commands/prompt.js";
 import { registerMediaCommands } from "./commands/media.js";
+import { registerMaskCommands } from "./commands/mask.js";
 import { registerTransformCommands } from "./commands/transform.js";
 import { registerBatchCommands } from "./commands/batch.js";
 import { registerCostCommands } from "./commands/cost.js";
@@ -41,6 +43,9 @@ export function buildProgram(cli?: ImageCli): Command {
       const opts = thisCommand.opts();
       ctx.json = Boolean(opts.json);
       ctx.verbose = Boolean(opts.verbose || opts.debug);
+      const level = opts.quiet ? "silent" : ctx.verbose ? "debug" : "info";
+      const logger = createLogger({ level });
+      logger.level = level;
     });
 
   registerConfigCommands(program, ctx);
@@ -56,6 +61,7 @@ export function buildProgram(cli?: ImageCli): Command {
   registerTypographyCommand(program, ctx);
   registerVariationsCommand(program, ctx);
   registerMediaCommands(program, ctx);
+  registerMaskCommands(program, ctx);
   registerTransformCommands(program, ctx);
   registerBatchCommands(program, ctx);
   registerCostCommands(program, ctx);

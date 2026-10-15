@@ -1,0 +1,7 @@
+primary: "Título principal"
+secondary: "Subtítulo descriptivo"
+hierarchy: "titulo-sobre-subtitulo"
+language: es
+style: sans-serif
+composition: centered
+colors: "#111111,#ffffff"

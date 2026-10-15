@@ -69,6 +69,9 @@ export class GenerationService {
               stream: request.stream,
               partialImages: request.partialImages,
               ...(request.responsesModel ? { responsesModel: request.responsesModel } : {}),
+              ...("previousResponseId" in request && request.previousResponseId
+                ? { previousResponseId: request.previousResponseId }
+                : {}),
             });
       return {
         ok: true,

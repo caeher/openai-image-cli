@@ -15,4 +15,9 @@ describe("built bin", () => {
     const result = spawnSync("node", [path.resolve("dist/cli.js"), "--help"], { encoding: "utf8" });
     expect(result.status).toBe(0);
   });
+
+  it("ships index declarations", () => {
+    const dts = fs.readFileSync("dist/index.d.ts", "utf8");
+    expect(dts).toContain("createImageCli");
+  });
 });
