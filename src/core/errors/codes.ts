@@ -1,0 +1,12 @@
+export const EXIT_SUCCESS = 0;
+export const EXIT_APP = 1;
+export const EXIT_USAGE = 2;
+export const EXIT_CONFIG = 3;
+export const EXIT_AUTH = 4;
+export const EXIT_API = 5;
+export const EXIT_MODERATION = 6;
+export const EXIT_BUDGET = 7;
+export const EXIT_CANCELLED = 8;
+export const EXIT_PARTIAL = 9;
+export const EXIT_PATH = 10;
+export const EXIT_CAPABILITY = 11;
