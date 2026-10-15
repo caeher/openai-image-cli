@@ -107,9 +107,14 @@ export class SharpMediaProcessor implements MediaProcessor {
   }
 
   async watermark(input: string, output: string, text: string, root?: string): Promise<ImageMetadata> {
-    this.resolve(input, root);
-    const svg = `<svg width="400" height="100"><text x="10" y="50" font-size="24" fill="white">${escapeXml(text)}</text></svg>`;
-    await sharp(input).composite([{ input: Buffer.from(svg), gravity: "southeast" }]).toFile(output);
+    const resolved = this.resolve(input, root);
+    assertInside(root ?? this.defaultRoot, path.resolve(output));
+    const meta = await sharp(resolved).metadata();
+    const width = meta.width ?? 256;
+    const height = meta.height ?? 256;
+    const fontSize = Math.max(12, Math.min(24, Math.floor(Math.min(width, height) / 8)));
+    const svg = `<svg width="${width}" height="${height}"><text x="${width - 8}" y="${height - 8}" font-size="${fontSize}" fill="white" text-anchor="end">${escapeXml(text)}</text></svg>`;
+    await sharp(resolved).composite([{ input: Buffer.from(svg) }]).toFile(output);
     return await this.inspect(output, root);
   }
 

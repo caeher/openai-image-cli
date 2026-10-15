@@ -1,9 +1,16 @@
 import type { Command } from "commander";
 import type { ProgramContext } from "../program.js";
 import { printOrJson } from "../context.js";
+import { helpExamples } from "../help.js";
 
 export function registerConfigCommands(program: Command, ctx: ProgramContext): void {
-  const config = program.command("config").description("Manage configuration");
+  const config = program
+    .command("config")
+    .description("Manage configuration")
+    .addHelpText(
+      "after",
+      helpExamples("config list", "config set model gpt-image-2.5-flare"),
+    );
   config
     .command("init")
     .description("Initialize configuration")
@@ -13,10 +20,23 @@ export function registerConfigCommands(program: Command, ctx: ProgramContext): v
       printOrJson(ctx, { ok: true, path }, `Config initialized at ${path}`);
     });
   config
-    .command("set <key> <value>")
-    .description("Set a configuration value")
+    .command("set [key] [value]")
+    .description("Set a configuration value or merge a file with --file")
     .option("--global", "Write global config")
+    .option("--file <path>", "JSON or YAML config object")
+    .addHelpText(
+      "after",
+      helpExamples("config set model gpt-image-2.5-flare", "config set --file ./cfg.json"),
+    )
     .action(async (key, value, opts) => {
+      if (opts.file) {
+        await ctx.cli.config.setFromFile(opts.file, { global: opts.global });
+        printOrJson(ctx, { ok: true }, `Merged config from ${opts.file}`);
+        return;
+      }
+      if (value === undefined) {
+        throw new Error("config set requires a value or --file");
+      }
       await ctx.cli.config.set(key, value, { global: opts.global });
       printOrJson(ctx, { ok: true }, `Set ${key}`);
     });

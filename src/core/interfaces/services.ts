@@ -31,6 +31,7 @@ export interface ConfigurationManager {
   getEffective(): import("../../config/schema.js").EffectiveConfig;
   init(options?: { global?: boolean }): Promise<string>;
   set(key: string, value: string, options?: { global?: boolean }): Promise<void>;
+  setFromFile(filePath: string, options?: { global?: boolean }): Promise<void>;
   get(key: string): unknown;
   list(): Record<string, unknown>;
   reset(options?: { global?: boolean }): Promise<void>;
@@ -75,7 +76,8 @@ export interface PromptBuilder {
     signal: AbortSignal,
   ): Promise<{ original: string; optimized: string }>;
   listTemplates(): readonly PromptTemplate[];
-  save(name: string, body: string): Promise<string>;
+  save(name: string, body: string, promptsDir?: string): Promise<string>;
+  loadSaved(name: string): string;
 }
 
 export interface ReferenceManager {
@@ -152,10 +154,25 @@ export interface StreamingService {
 
 export interface BatchProcessor {
   createFromFile(path: string, options: { mode: "local" | "openai"; model: string }): Promise<string>;
-  run(batchId: string, signal: AbortSignal, options?: { retry?: boolean }): Promise<void>;
-  status(batchId: string): Promise<import("../../services/batch/manifest.js").BatchManifest>;
-  retry(batchId: string, signal: AbortSignal): Promise<void>;
-  export(batchId: string, outputDir: string): Promise<void>;
+  run(
+    batchId: string,
+    signal: AbortSignal,
+    options?: { retry?: boolean; mode?: "local" | "openai" },
+  ): Promise<void>;
+  status(
+    batchId: string,
+    options?: { mode?: "local" | "openai" },
+  ): Promise<import("../../services/batch/manifest.js").BatchManifest>;
+  retry(
+    batchId: string,
+    signal: AbortSignal,
+    options?: { mode?: "local" | "openai" },
+  ): Promise<void>;
+  export(
+    batchId: string,
+    outputDir: string,
+    options?: { mode?: "local" | "openai" },
+  ): Promise<void>;
 }
 
 export interface JobManager {

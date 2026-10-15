@@ -1,0 +1,5 @@
+references:
+  - path: ./subject.png
+    role: subject
+  - path: ./background.png
+    role: background

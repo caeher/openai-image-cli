@@ -39,19 +39,40 @@ const SECTIONS: Array<{ key: keyof StructuredPrompt; label: string }> = [
   { key: "constraints", label: "Restricciones" },
 ];
 
+function hyphenToCamel(key: string): string {
+  return key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
 function normalizeVarKey(key: string): keyof StructuredPrompt | null {
   const normalized = key.replace(/-/g, "").toLowerCase();
-  const map: Record<string, keyof StructuredPrompt> = {
+  const aliasMap: Record<string, keyof StructuredPrompt> = {
     objective: "objective",
     objetivo: "objective",
     palette: "palette",
     colorpalette: "palette",
+    cameraangle: "cameraAngle",
+    texttorender: "textToRender",
   };
-  return map[normalized] ?? (SECTIONS.find((s) => s.key === key)?.key ?? null);
+  if (aliasMap[normalized]) {
+    return aliasMap[normalized];
+  }
+  const camel = hyphenToCamel(key) as keyof StructuredPrompt;
+  if (SECTIONS.some((s) => s.key === camel)) {
+    return camel;
+  }
+  if (SECTIONS.some((s) => s.key === key)) {
+    return key as keyof StructuredPrompt;
+  }
+  return null;
 }
 
+export { normalizeVarKey, SECTIONS as PROMPT_SECTIONS };
+
 export class PromptEngine {
-  constructor(private readonly optimizer?: TextOptimizer) {}
+  constructor(
+    private readonly optimizer?: TextOptimizer,
+    private readonly promptsDir?: string,
+  ) {}
 
   create(fields: StructuredPrompt): string {
     const lines: string[] = [];
@@ -124,8 +145,19 @@ export class PromptEngine {
     return PROMPT_TEMPLATES;
   }
 
-  async save(name: string, body: string): Promise<string> {
-    const dir = path.join(os.homedir(), ".config", "oaiimage", "prompts");
+  loadSaved(name: string): string {
+    const dir =
+      this.promptsDir ?? path.join(os.homedir(), ".config", "oaiimage", "prompts");
+    const file = path.join(dir, `${name}.txt`);
+    if (!fs.existsSync(file)) {
+      throw new UsageError(`Unknown saved prompt: ${name}`);
+    }
+    return fs.readFileSync(file, "utf8");
+  }
+
+  async save(name: string, body: string, promptsDir?: string): Promise<string> {
+    const dir =
+      promptsDir ?? this.promptsDir ?? path.join(os.homedir(), ".config", "oaiimage", "prompts");
     await fs.promises.mkdir(dir, { recursive: true });
     const file = path.join(dir, `${name}.txt`);
     await fs.promises.writeFile(file, body, "utf8");

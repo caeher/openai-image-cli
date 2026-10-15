@@ -4,11 +4,18 @@ import type { ProgramContext } from "../program.js";
 import { printOrJson } from "../context.js";
 import { AuthError, UsageError } from "../../core/errors/errors.js";
 import type { ImageEditRequest } from "../../core/entities/request.js";
+import { helpExamples } from "../help.js";
+import { nextSessionCall } from "../../services/sessions/plan.js";
+import { budgetFromFlags } from "../options/cost.js";
 
 export function registerSessionCommands(program: Command, ctx: ProgramContext): void {
-  const session = program.command("session").description("Creative sessions");
+  const session = program
+    .command("session")
+    .description("Creative sessions")
+    .addHelpText("after", helpExamples("session create", "session history <id>"));
   session
     .command("create")
+    .addHelpText("after", helpExamples("session create", "session create --json"))
     .action(async () => {
       const effective = ctx.cli.config.getEffective();
       const created = await ctx.cli.sessions.create({
@@ -23,7 +30,7 @@ export function registerSessionCommands(program: Command, ctx: ProgramContext): 
     .description("Continue a session with a new prompt")
     .addHelpText(
       "after",
-      "\nExamples:\n  $ oaiimage session edit abc --prompt \"add rain\"\n  $ oaiimage session edit abc --prompt \"wider frame\" --dry-run",
+      helpExamples('session edit abc --prompt "add rain"', 'session edit abc --prompt "wider frame" --dry-run'),
     )
     .requiredOption("--prompt <text>")
     .option("--image <path>")
@@ -37,24 +44,30 @@ export function registerSessionCommands(program: Command, ctx: ProgramContext): 
       const effective = ctx.cli.config.getEffective();
       const last = existing.iterations.at(-1);
       const dryRun = Boolean(opts.dryRun);
-      if (!dryRun && !process.env.OPENAI_API_KEY) {
-        throw new AuthError("OPENAI_API_KEY is not set");
+      const plan = nextSessionCall({
+        apiMode: existing.apiMode,
+        prompt: opts.prompt,
+        ...(last ? { parent: last } : {}),
+        ...(opts.image ? { imagePath: opts.image } : {}),
+      });
+      if (plan.kind === "generate" && !opts.prompt) {
+        throw new UsageError("session edit requires --prompt");
+      }
+      if (plan.kind === "generate" && !opts.image && !last?.outputPaths[0] && !last?.responseId) {
+        throw new UsageError("session edit requires --image or a prior iteration output path");
       }
 
-      const apiMode = existing.apiMode;
-      const imagePath = opts.image ?? last?.outputPaths[0];
-      const previousResponseId =
-        apiMode === "responses" && last?.responseId ? last.responseId : undefined;
+      const budget = budgetFromFlags({
+        interactive: Boolean(process.stdin.isTTY),
+        confirmCost: Boolean(opts.confirmCost),
+      });
 
       let result;
-      if (imagePath || previousResponseId) {
-        if (!imagePath) {
-          throw new UsageError("session edit requires --image or a prior iteration output path");
-        }
+      if (plan.kind === "edit") {
         const editRequest: ImageEditRequest = {
           prompt: opts.prompt,
           model: existing.imageModel,
-          apiMode,
+          apiMode: existing.apiMode,
           responsesModel: existing.responsesModel ?? effective.responsesModel,
           size: effective.size,
           quality: effective.quality,
@@ -66,23 +79,23 @@ export function registerSessionCommands(program: Command, ctx: ProgramContext): 
           savePartials: false,
           directory: effective.outputDir,
           dryRun,
-          images: [{ path: imagePath, role: "subject" }],
+          images: [{ path: plan.imagePath, role: "subject" }],
           preserve: [],
-          ...(previousResponseId ? { previousResponseId } : {}),
+          ...(plan.previousResponseId ? { previousResponseId: plan.previousResponseId } : {}),
         };
         const cost = ctx.cli.costs.estimate(editRequest);
         if (!dryRun) {
-          ctx.cli.costs.assertWithinBudget(cost, {
-            interactive: Boolean(process.stdin.isTTY),
-            confirmCost: Boolean(opts.confirmCost),
-          });
+          if (!process.env.OPENAI_API_KEY) {
+            throw new AuthError("OPENAI_API_KEY is not set");
+          }
+          ctx.cli.costs.assertWithinBudget(cost, budget);
         }
         result = await ctx.cli.editing.edit(editRequest, new AbortController().signal);
       } else {
         const genRequest = {
           prompt: opts.prompt,
           model: existing.imageModel,
-          apiMode,
+          apiMode: existing.apiMode,
           responsesModel: existing.responsesModel ?? effective.responsesModel,
           size: effective.size,
           quality: effective.quality,
@@ -97,15 +110,16 @@ export function registerSessionCommands(program: Command, ctx: ProgramContext): 
         };
         const cost = ctx.cli.costs.estimate(genRequest);
         if (!dryRun) {
-          ctx.cli.costs.assertWithinBudget(cost, {
-            interactive: Boolean(process.stdin.isTTY),
-            confirmCost: Boolean(opts.confirmCost),
-          });
+          if (!process.env.OPENAI_API_KEY) {
+            throw new AuthError("OPENAI_API_KEY is not set");
+          }
+          ctx.cli.costs.assertWithinBudget(cost, budget);
         }
         result = await ctx.cli.generation.generate(genRequest, new AbortController().signal);
       }
 
       if (!dryRun) {
+        const source = plan.kind === "edit" ? plan.source : "fallback";
         await ctx.cli.sessions.addIteration(id, {
           id: crypto.randomBytes(6).toString("hex"),
           ...(last?.id ? { parentId: last.id } : {}),
@@ -116,7 +130,7 @@ export function registerSessionCommands(program: Command, ctx: ProgramContext): 
           parameters: {},
           cost: result.cost,
           outputPaths: result.images.map((img) => img.path),
-          source: previousResponseId ? "api" : "fallback",
+          source,
           ...(result.responseId ? { responseId: result.responseId } : {}),
           ...(result.imageCallId ? { imageCallId: result.imageCallId } : {}),
         });
@@ -124,20 +138,32 @@ export function registerSessionCommands(program: Command, ctx: ProgramContext): 
       printOrJson(ctx, result, dryRun ? "Dry run" : `Session ${id} updated`);
     });
 
-  session.command("history <id>").action(async (id) => {
-    const s = await ctx.cli.sessions.get(id);
-    printOrJson(ctx, s, JSON.stringify(s, null, 2));
-  });
-  session.command("inspect <id>").action(async (id) => {
-    const s = await ctx.cli.sessions.get(id);
-    printOrJson(ctx, s, JSON.stringify(s, null, 2));
-  });
-  session.command("export <id> <path>").action(async (id, out) => {
-    await ctx.cli.sessions.exportSession(id, out);
-    printOrJson(ctx, { ok: true }, `Exported ${id}`);
-  });
-  session.command("delete <id>").action(async (id) => {
-    await ctx.cli.sessions.delete(id);
-    printOrJson(ctx, { ok: true }, `Deleted ${id}`);
-  });
+  session
+    .command("history <id>")
+    .addHelpText("after", helpExamples("session history <id>", "session history <id> --json"))
+    .action(async (id) => {
+      const s = await ctx.cli.sessions.get(id);
+      printOrJson(ctx, s, JSON.stringify(s, null, 2));
+    });
+  session
+    .command("inspect <id>")
+    .addHelpText("after", helpExamples("session inspect <id>", "session inspect <id> --json"))
+    .action(async (id) => {
+      const s = await ctx.cli.sessions.get(id);
+      printOrJson(ctx, s, JSON.stringify(s, null, 2));
+    });
+  session
+    .command("export <id> <path>")
+    .addHelpText("after", helpExamples("session export <id> ./backup.json", "session export <id> out.json --json"))
+    .action(async (id, out) => {
+      await ctx.cli.sessions.exportSession(id, out);
+      printOrJson(ctx, { ok: true }, `Exported ${id}`);
+    });
+  session
+    .command("delete <id>")
+    .addHelpText("after", helpExamples("session delete <id>", "session delete <id> --json"))
+    .action(async (id) => {
+      await ctx.cli.sessions.delete(id);
+      printOrJson(ctx, { ok: true }, `Deleted ${id}`);
+    });
 }

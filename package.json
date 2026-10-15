@@ -21,7 +21,7 @@
   },
   "scripts": {
     "dev": "node --import tsx src/cli/main.ts",
-    "build": "tsup --no-dts",
+    "build": "tsup --no-dts && tsc -p tsconfig.dts.json",
     "lint": "node --require ./scripts/eslint-typescript6-hook.cjs ./node_modules/eslint/bin/eslint.js .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

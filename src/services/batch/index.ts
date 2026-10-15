@@ -87,24 +87,46 @@ export class BatchProcessorService implements BatchProcessor {
     return manifest.id;
   }
 
-  async run(batchId: string, signal: AbortSignal, options?: { retry?: boolean }): Promise<void> {
+  private assertMode(manifest: BatchManifest, mode?: "local" | "openai"): void {
+    if (mode && manifest.mode !== mode) {
+      throw new UsageError(`Batch ${manifest.id} is mode ${manifest.mode}, not ${mode}`);
+    }
+  }
+
+  async run(
+    batchId: string,
+    signal: AbortSignal,
+    options?: { retry?: boolean; mode?: "local" | "openai" },
+  ): Promise<void> {
     const manifest = this.store.read(batchId);
+    this.assertMode(manifest, options?.mode);
     if (manifest.mode === "openai") {
       return;
     }
     await this.local.run(batchId, signal, options?.retry ?? false);
   }
 
-  async status(batchId: string): Promise<BatchManifest> {
-    return this.store.read(batchId);
-  }
-
-  async retry(batchId: string, signal: AbortSignal): Promise<void> {
-    await this.run(batchId, signal, { retry: true });
-  }
-
-  async export(batchId: string, outputDir: string): Promise<void> {
+  async status(batchId: string, options?: { mode?: "local" | "openai" }): Promise<BatchManifest> {
     const manifest = this.store.read(batchId);
+    this.assertMode(manifest, options?.mode);
+    return manifest;
+  }
+
+  async retry(
+    batchId: string,
+    signal: AbortSignal,
+    options?: { mode?: "local" | "openai" },
+  ): Promise<void> {
+    await this.run(batchId, signal, { retry: true, ...(options?.mode ? { mode: options.mode } : {}) });
+  }
+
+  async export(
+    batchId: string,
+    outputDir: string,
+    options?: { mode?: "local" | "openai" },
+  ): Promise<void> {
+    const manifest = this.store.read(batchId);
+    this.assertMode(manifest, options?.mode);
     fs.mkdirSync(outputDir, { recursive: true });
     for (const item of manifest.items) {
       for (const p of item.outputPaths) {

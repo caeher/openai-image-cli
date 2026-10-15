@@ -11,6 +11,7 @@ import {
 } from "./paths.js";
 import {
   mergeConfig,
+  parseConfigJsonObject,
   parseConfigYamlObject,
   type EffectiveConfig,
 } from "./schema.js";
@@ -133,6 +134,31 @@ export function loadConfigManager(options: LoadConfigOptions) {
         );
       }
       return target;
+    },
+    async setFromFile(filePath: string, setOptions?: { global?: boolean }) {
+      const ext = path.extname(filePath).toLowerCase();
+      const rawText = fs.readFileSync(filePath, "utf8");
+      const parsed = ext === ".json" ? JSON.parse(rawText) : YAML.parse(rawText);
+      if (!parsed || typeof parsed !== "object") {
+        throw new ConfigError(`Config file is not an object: ${filePath}`);
+      }
+      try {
+        parseConfigJsonObject(parsed as Record<string, unknown>);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes("Secret key")) {
+          throw new ConfigError(message);
+        }
+        throw new ConfigError(`Invalid config at ${filePath}: ${message}`);
+      }
+      const projectRoot = findProjectRoot(options.cwd);
+      const target =
+        setOptions?.global || !projectRoot
+          ? globalConfigPath(pathCtx)
+          : projectConfigPath(projectRoot);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, YAML.stringify(parsed));
+      effective = loadEffectiveConfig(options);
     },
     async set(key: string, value: string, setOptions?: { global?: boolean }) {
       if (secretKeys.has(key) || key === "apiKey") {

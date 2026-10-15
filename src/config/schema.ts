@@ -54,6 +54,10 @@ export function parseConfigYamlObject(raw: Record<string, unknown>): ConfigFile 
   return configFileSchema.parse(raw) as Partial<import("./defaults.js").ProductDefaults>;
 }
 
+export function parseConfigJsonObject(raw: Record<string, unknown>): ConfigFile {
+  return parseConfigYamlObject(raw);
+}
+
 export function mergeConfig(
   layers: Array<{ data: Partial<ProductDefaults>; source: EffectiveConfig["sources"][string] }>,
 ): EffectiveConfig {
