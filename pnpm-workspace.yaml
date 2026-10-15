@@ -1,0 +1,11 @@
+allowBuilds:
+  esbuild: true
+  sharp: true
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+
+minimumReleaseAgeExclude:
+  - openai@7.34.0
+  - tsup@9.0.0
